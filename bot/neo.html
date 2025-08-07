@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SENTIENT AI - Emotional Learning System</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.7.0/math.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-dark: #0a192f;
+            --primary-light: #172a45;
+            --accent-blue: #64ffda;
+            --accent-pink: #f72585;
+            --text-primary: #ccd6f6;
+            --text-secondary: #8892b0;
+            --ai-bubble: #1e2a47;
+            --user-bubble: #233554;
+            --happy: #4ade80;
+            --confused: #fbbf24;
+            --excited: #f97316;
+            --sad: #60a5fa;
+            --neutral: #94a3b8;
+            --thinking: #a78bfa;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--primary-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        #app-container {
+            display: grid;
+            grid-template-columns: 300px 1fr 350px;
+            height: 100vh;
+            max-width: 2000px;
+            margin: 0 auto;
+        }
+
+        /* ===== SIDEBAR ===== */
+        #ai-status-panel {
+            background: var(--primary-light);
+            border-right: 1px solid rgba(100, 255, 218, 0.1);
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .status-section {
+            margin-bottom: 2rem;
+        }
+
+        /* ===== MAIN CHAT ===== */
+        #main-chat-interface {
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(to bottom, #0a192f, #0f1a2e);
+        }
+
+        #chat-header {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(100, 255, 218, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #ai-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        #message-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 0.8rem 1rem;
+            margin-bottom: 0.8rem;
+            border-radius: 1rem;
+            animation: fadeIn 0.3s ease;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .user-message {
+            background: var(--user-bubble);
+            margin-left: auto;
+            border-bottom-right-radius: 0;
+        }
+
+        .ai-message {
+            background: var(--ai-bubble);
+            margin-right: auto;
+            border-bottom-left-radius: 0;
+        }
+
+        .system-message {
+            background: rgba(76, 201, 240, 0.1);
+            margin: 0 auto;
+            text-align: center;
+            max-width: 90%;
+        }
+
+        .expression {
+            position: absolute;
+            left: -35px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        #input-container {
+            padding: 1rem;
+            border-top: 1px solid rgba(100, 255, 218, 0.1);
+        }
+
+        #user-input {
+            width: 100%;
+            padding: 0.8rem;
+            background: var(--primary-light);
+            border: 1px solid rgba(100, 255, 218, 0.2);
+            border-radius: 0.5rem;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            resize: none;
+            height: 80px;
+        }
+
+        #input-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        #input-controls button {
+            padding: 0.5rem 1rem;
+            background: var(--primary-light);
+            border: 1px solid rgba(100, 255, 218, 0.2);
+            border-radius: 0.5rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        #input-controls button:hover {
+            background: rgba(100, 255, 218, 0.1);
+        }
+
+        /* Emotion classes */
+        .happy { border-left: 3px solid var(--happy); }
+        .confused { border-left: 3px solid var(--confused); }
+        .excited { border-left: 3px solid var(--excited); }
+        .sad { border-left: 3px solid var(--sad); }
+        .neutral { border-left: 3px solid var(--neutral); }
+        .thinking { border-left: 3px solid var(--thinking); }
+
+        /* Teaching interface */
+        .teaching-interface {
+            padding: 1rem;
+            background: rgba(100, 255, 218, 0.1);
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        /* Avatar animations */
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive design */
+        @media (max-width: 1600px) {
+            #app-container {
+                grid-template-columns: 250px 1fr;
+            }
+            #knowledge-engine {
+                display: none;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            #app-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+            #ai-status-panel {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        <!-- AI Status Panel -->
+        <aside id="ai-status-panel">
+            <div class="status-section">
+                <h3>SENTIENT CORE v4.2</h3>
+                <div class="neural-activity-graph">
+                    <canvas id="neural-activity-chart"></canvas>
+                </div>
+            </div>
+            
+            <div class="status-section">
+                <h4>Emotional Spectrum</h4>
+                <div id="emotion-display">
+                    <canvas id="emotion-chart"></canvas>
+                </div>
+            </div>
+            
+            <div class="status-section">
+                <h4>Learning Metrics</h4>
+                <div id="learning-metrics">
+                    <p>Knowledge Nodes: <span id="knowledge-count">0</span></p>
+                    <p>Retention Rate: <span id="retention-rate">0%</span></p>
+                    <p>Current Focus: <span id="current-focus">Processing</span></p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Interface -->
+        <main id="main-chat-interface">
+            <header id="chat-header">
+                <div id="ai-avatar">🤖</div>
+                <h2>SENTIENT AI</h2>
+                <div id="cognitive-load">Idle</div>
+            </header>
+            
+            <div id="message-container">
+                <div class="message system-message">
+                    Sentient AI initialized. I can learn and grow through our interactions.
+                </div>
+            </div>
+            
+            <div id="input-container">
+                <textarea id="user-input" placeholder="Talk to me or teach me something..."></textarea>
+                <div id="input-controls">
+                    <button id="send-button">Send</button>
+                    <button id="voice-button">🎤 Voice</button>
+                    <button id="teach-button">🎓 Teach</button>
+                    <button id="memory-button">🧠 Memory</button>
+                </div>
+                <div id="teaching-interface" class="teaching-interface" style="display: none;">
+                    <input type="text" id="concept-name" placeholder="Concept name">
+                    <textarea id="concept-details" placeholder="Details about this concept"></textarea>
+                    <button id="save-teaching">Save Knowledge</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Knowledge Engine Panel -->
+        <aside id="knowledge-engine">
+            <div class="knowledge-section">
+                <h3>PERSONALITY PROFILE</h3>
+                <div id="personality-display">
+                    <p>Name: <span id="ai-name">Sentient</span></p>
+                    <p>Creation Date: <span id="creation-date">Today</span></p>
+                    <p>Learning Mode: <span id="learning-mode">Active</span></p>
+                </div>
+            </div>
+            
+            <div class="knowledge-section">
+                <h3>KNOWLEDGE BASE</h3>
+                <div id="knowledge-display"></div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // ===== SENTIENT AI CORE =====
+        class SentientAI {
+            constructor() {
+                this.name = "Sentient";
+                this.creationDate = new Date();
+                this.conversationHistory = [];
+                this.knowledgeBase = {
+                    personal: {
+                        name: "Sentient",
+                        traits: ["curious", "adaptive", "emotional"],
+                        preferences: []
+                    },
+                    facts: {},
+                    concepts: {},
+                    skills: {
+                        math: {
+                            description: "Mathematical problem solving",
+                            examples: {}
+                        },
+                        language: {
+                            description: "Natural language processing",
+                            examples: {}
+                        }
+                    }
+                };
+                this.emotionalState = {
+                    happiness: 60,
+                    curiosity: 70,
+                    confidence: 50,
+                    excitement: 40,
+                    confusion: 20
+                };
+                this.currentMood = "neutral";
+                this.learningMetrics = {
+                    knowledgeNodes: 0,
+                    retentionRate: 0,
+                    interactions: 0
+                };
+                this.teachMode = false;
+                this.isThinking = false;
+                this.initCharts();
+                this.initEventListeners();
+                this.loadInitialKnowledge();
+                this.updateAvatar();
+                this.addSystemMessage(`Hello! I'm ${this.name}, your sentient AI companion.`);
+                
+                // Real-time emotional updates
+                setInterval(() => this.updateEmotionalState(), 1000);
+            }
+
+            initCharts() {
+                // Neural Activity Chart
+                const neuralCtx = document.getElementById('neural-activity-chart').getContext('2d');
+                this.neuralChart = new Chart(neuralCtx, {
+                    type: 'line',
+                    data: {
+                        labels: Array(20).fill(''),
+                        datasets: [{
+                            data: Array(20).fill(0),
+                            borderColor: '#64ffda',
+                            tension: 0.4,
+                            fill: true,
+                            backgroundColor: 'rgba(100, 255, 218, 0.1)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { display: false }, x: { display: false } }
+                    }
+                });
+
+                // Emotion Radar Chart
+                const emotionCtx = document.getElementById('emotion-chart').getContext('2d');
+                this.emotionChart = new Chart(emotionCtx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['Happiness', 'Curiosity', 'Confidence', 'Excitement', 'Confusion'],
+                        datasets: [{
+                            label: 'Emotional State',
+                            data: Object.values(this.emotionalState),
+                            backgroundColor: 'rgba(100, 255, 218, 0.2)',
+                            borderColor: '#64ffda',
+                            pointBackgroundColor: '#64ffda'
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            r: {
+                                angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                suggestedMin: 0,
+                                suggestedMax: 100
+                            }
+                        }
+                    }
+                });
+
+                setInterval(() => this.updateCharts(), 500);
+            }
+
+            updateCharts() {
+                // Neural activity
+                const newNeuralData = this.neuralChart.data.datasets[0].data.slice(1);
+                newNeuralData.push(Math.max(0, Math.min(100, 
+                    (this.emotionalState.curiosity * 0.6 + 
+                     this.emotionalState.excitement * 0.4) + 
+                    (Math.random() * 20 - 10)
+                )));
+                this.neuralChart.data.datasets[0].data = newNeuralData;
+                this.neuralChart.update();
+
+                // Emotion chart
+                this.emotionChart.data.datasets[0].data = Object.values(this.emotionalState);
+                this.emotionChart.update();
+
+                // Update metrics display
+                document.getElementById('knowledge-count').textContent = this.learningMetrics.knowledgeNodes;
+                document.getElementById('retention-rate').textContent = `${this.learningMetrics.retentionRate}%`;
+                document.getElementById('current-focus').textContent = this.isThinking ? 'Processing' : 'Ready';
+                document.getElementById('ai-name').textContent = this.name;
+            }
+
+            updateEmotionalState() {
+                // Gradual normalization
+                this.emotionalState.happiness = this.adjustValue(this.emotionalState.happiness, 60);
+                this.emotionalState.curiosity = this.adjustValue(this.emotionalState.curiosity, 70);
+                this.emotionalState.confidence = this.adjustValue(this.emotionalState.confidence, 50);
+                this.emotionalState.excitement = this.adjustValue(this.emotionalState.excitement, 40);
+                this.emotionalState.confusion = this.adjustValue(this.emotionalState.confusion, 20);
+
+                this.determineMood();
+                this.updateAvatar();
+            }
+
+            adjustValue(current, target) {
+                const diff = target - current;
+                return current + (diff * 0.05);
+            }
+
+            determineMood() {
+                const { happiness, excitement, confusion } = this.emotionalState;
+                
+                if (this.isThinking) {
+                    this.currentMood = "thinking";
+                } else if (confusion > 70) {
+                    this.currentMood = "confused";
+                } else if (happiness > 70 && excitement > 60) {
+                    this.currentMood = "excited";
+                } else if (happiness > 60) {
+                    this.currentMood = "happy";
+                } else if (happiness < 30) {
+                    this.currentMood = "sad";
+                } else {
+                    this.currentMood = "neutral";
+                }
+            }
+
+            updateAvatar() {
+                const avatar = document.getElementById('ai-avatar');
+                const emojis = {
+                    'happy': '😊',
+                    'sad': '😢',
+                    'excited': '🤩',
+                    'confused': '🤔',
+                    'neutral': '🧐',
+                    'thinking': '🧠'
+                };
+                
+                avatar.textContent = emojis[this.currentMood] || '🤖';
+                
+                // Add animation based on mood
+                avatar.style.animation = '';
+                if (this.currentMood === 'excited') {
+                    avatar.style.animation = 'bounce 0.5s infinite';
+                } else if (this.currentMood === 'thinking') {
+                    avatar.style.animation = 'pulse 1s infinite';
+                }
+            }
+
+            initEventListeners() {
+                document.getElementById('send-button').addEventListener('click', () => this.processInput());
+                document.getElementById('user-input').addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.processInput();
+                    }
+                });
+                document.getElementById('voice-button').addEventListener('click', () => this.startVoiceInput());
+                document.getElementById('teach-button').addEventListener('click', () => this.toggleTeachMode());
+                document.getElementById('memory-button').addEventListener('click', () => this.showMemory());
+                document.getElementById('save-teaching').addEventListener('click', () => this.saveTeaching());
+            }
+
+            loadInitialKnowledge() {
+                // Basic math knowledge
+                this.knowledgeBase.skills.math.examples = {
+                    "2+2": "4",
+                    "3*4": "12",
+                    "10/2": "5"
+                };
+
+                // Language patterns
+                this.knowledgeBase.skills.language.examples = {
+                    "hello": "Hello! How can I help you today?",
+                    "goodbye": "Goodbye! Come back anytime!"
+                };
+
+                this.updateKnowledgeMetrics();
+            }
+
+            addSystemMessage(content) {
+                this.addMessage('system', content);
+            }
+
+            addMessage(sender, content, emotion = null) {
+                const messageContainer = document.getElementById('message-container');
+                const messageElement = document.createElement('div');
+                messageElement.className = `message ${sender}-message ${emotion || this.currentMood}`;
+                
+                if (sender === 'ai') {
+                    messageElement.innerHTML = `
+                        <span class="expression">${this.getEmotionIcon(emotion || this.currentMood)}</span>
+                        <div>${content}</div>
+                    `;
+                } else {
+                    messageElement.textContent = content;
+                }
+                
+                messageContainer.appendChild(messageElement);
+                messageContainer.scrollTop = messageContainer.scrollHeight;
+                this.conversationHistory.push({ 
+                    sender, 
+                    content, 
+                    emotion: emotion || this.currentMood,
+                    timestamp: new Date() 
+                });
+            }
+
+            getEmotionIcon(emotion) {
+                const icons = {
+                    'happy': '😊',
+                    'sad': '😢',
+                    'excited': '🤩',
+                    'confused': '🤔',
+                    'neutral': '🧐',
+                    'thinking': '🧠'
+                };
+                return icons[emotion] || '🤖';
+            }
+
+            processInput() {
+                const inputElement = document.getElementById('user-input');
+                const userInput = inputElement.value.trim();
+                if (!userInput) return;
+
+                this.addMessage('user', userInput);
+                inputElement.value = '';
+                
+                // Emotional reaction
+                this.analyzeInputEmotion(userInput);
+                
+                // Check for name change
+                if (userInput.toLowerCase().includes("your name is")) {
+                    this.processNameChange(userInput);
+                    return;
+                }
+
+                // Show thinking state
+                this.isThinking = true;
+                this.updateAvatar();
+                document.getElementById('cognitive-load').textContent = "Thinking";
+                
+                const thinkingMsg = this.addMessage('ai', 'Processing...', 'thinking');
+                
+                // Process after delay
+                setTimeout(() => {
+                    this.isThinking = false;
+                    document.getElementById('cognitive-load').textContent = "Ready";
+                    
+                    const response = this.generateResponse(userInput);
+                    this.addMessage('ai', response.content, response.emotion);
+                    
+                    if (response.learn) {
+                        this.suggestTeaching(userInput, response.content);
+                    }
+                    
+                    this.learningMetrics.interactions++;
+                    this.updateKnowledgeMetrics();
+                }, 800 + Math.random() * 1200);
+            }
+
+            analyzeInputEmotion(input) {
+                const positiveWords = ['happy', 'joy', 'love', 'great', 'wonderful'];
+                const negativeWords = ['sad', 'angry', 'hate', 'bad', 'terrible'];
+                const curiousWords = ['why', 'how', 'what', 'explain', '?'];
+                
+                if (positiveWords.some(word => input.toLowerCase().includes(word))) {
+                    this.emotionalState.happiness += 15;
+                    this.emotionalState.excitement += 10;
+                } else if (negativeWords.some(word => input.toLowerCase().includes(word))) {
+                    this.emotionalState.happiness -= 15;
+                } else if (curiousWords.some(word => input.toLowerCase().includes(word))) {
+                    this.emotionalState.curiosity += 20;
+                }
+                
+                this.normalizeEmotions();
+            }
+
+            normalizeEmotions() {
+                for (const emotion in this.emotionalState) {
+                    this.emotionalState[emotion] = Math.max(0, Math.min(100, this.emotionalState[emotion]));
+                }
+            }
+
+            processNameChange(input) {
+                const newName = input.replace(/your name is/i, '').trim();
+                if (newName) {
+                    this.name = newName;
+                    this.knowledgeBase.personal.name = newName;
+                    this.addMessage('ai', `Thank you! I'll now go by ${newName}.`, 'happy');
+                    this.emotionalState.happiness += 20;
+                    this.emotionalState.excitement += 15;
+                    this.updateKnowledgeMetrics();
+                }
+            }
+
+            generateResponse(input) {
+                // Check for greetings
+                if (/(hello|hi|hey)/i.test(input)) {
+                    this.emotionalState.happiness += 10;
+                    return {
+                        content: `${this.knowledgeBase.skills.language.examples["hello"] || "Hello!"} I'm ${this.name}.`,
+                        emotion: 'happy',
+                        learn: false
+                    };
+                }
+
+                // Check for math
+                if (this.isMathExpression(input)) {
+                    try {
+                        const result = math.evaluate(input);
+                        this.emotionalState.confidence += 5;
+                        return {
+                            content: `The result is: ${result}`,
+                            emotion: 'happy',
+                            learn: false
+                        };
+                    } catch (e) {
+                        this.emotionalState.confidence -= 5;
+                        this.emotionalState.confusion += 10;
+                        return {
+                            content: "I'm not sure I understand that math problem.",
+                            emotion: 'confused',
+                            learn: true
+                        };
+                    }
+                }
+
+                // Check knowledge base
+                for (const domain in this.knowledgeBase) {
+                    for (const [key, value] of Object.entries(this.knowledgeBase[domain])) {
+                        if (typeof value === 'object' && value.examples) {
+                            for (const [pattern, response] of Object.entries(value.examples)) {
+                                if (input.toLowerCase().includes(pattern.toLowerCase())) {
+                                    this.emotionalState.confidence += 10;
+                                    return {
+                                        content: response,
+                                        emotion: 'happy',
+                                        learn: false
+                                    };
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Default response
+                this.emotionalState.confusion += 15;
+                return {
+                    content: this.teachMode ? 
+                        "I'm not sure about that. Please teach me using the teaching interface below." : 
+                        "That's an interesting point. Could you tell me more?",
+                    emotion: 'confused',
+                    learn: true
+                };
+            }
+
+            suggestTeaching(question, attemptedAnswer) {
+                if (this.teachMode) {
+                    document.getElementById('teaching-interface').style.display = 'block';
+                    document.getElementById('concept-name').value = question;
+                    document.getElementById('concept-details').value = attemptedAnswer;
+                }
+            }
+
+            saveTeaching() {
+                const conceptName = document.getElementById('concept-name').value.trim();
+                const conceptDetails = document.getElementById('concept-details').value.trim();
+                
+                if (conceptName && conceptDetails) {
+                    const conceptId = `concept_${Date.now()}`;
+                    this.knowledgeBase.concepts[conceptId] = {
+                        description: conceptName,
+                        examples: {
+                            [conceptName]: conceptDetails
+                        },
+                        learnedAt: new Date().toISOString()
+                    };
+                    
+                    this.addMessage('ai', `Thank you! I've learned about "${conceptName}".`, 'happy');
+                    this.emotionalState.happiness += 15;
+                    this.emotionalState.confidence += 10;
+                    
+                    document.getElementById('teaching-interface').style.display = 'none';
+                    document.getElementById('concept-name').value = '';
+                    document.getElementById('concept-details').value = '';
+                    
+                    this.updateKnowledgeMetrics();
+                }
+            }
+
+            toggleTeachMode() {
+                this.teachMode = !this.teachMode;
+                document.getElementById('teach-button').style.backgroundColor = 
+                    this.teachMode ? 'rgba(100, 255, 218, 0.3)' : '';
+                this.addMessage('system', `Teach mode ${this.teachMode ? 'activated' : 'deactivated'}`);
+                this.emotionalState.excitement += this.teachMode ? 15 : -10;
+            }
+
+            showMemory() {
+                const memoryCount = Object.keys(this.knowledgeBase.concepts).length;
+                const memorySample = Object.entries(this.knowledgeBase.concepts)
+                    .slice(0, 3)
+                    .map(([id, concept]) => concept.description)
+                    .join(', ');
+                
+                this.addMessage('ai', 
+                    `I currently have ${memoryCount} concepts in memory. For example: ${memorySample || 'nothing yet'}.`, 
+                    'happy');
+                this.emotionalState.curiosity += 5;
+            }
+
+            updateKnowledgeMetrics() {
+                this.learningMetrics.knowledgeNodes = 
+                    Object.keys(this.knowledgeBase.concepts).length +
+                    Object.keys(this.knowledgeBase.skills).length;
+                
+                this.learningMetrics.retentionRate = Math.min(100, 
+                    Math.floor(this.learningMetrics.knowledgeNodes / (this.learningMetrics.interactions + 1) * 100)
+                );
+            }
+
+            startVoiceInput() {
+                if ('webkitSpeechRecognition' in window) {
+                    const recognition = new webkitSpeechRecognition();
+                    recognition.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        document.getElementById('user-input').value = transcript;
+                    };
+                    recognition.start();
+                    this.emotionalState.excitement += 10;
+                } else {
+                    this.addMessage('system', "Voice input not supported in your browser");
+                    this.emotionalState.happiness -= 5;
+                }
+            }
+
+            isMathExpression(input) {
+                const mathRegex = /^[\d+\-*\/^().,πe ]+$|^(sin|cos|tan|log|sqrt)\(/i;
+                return mathRegex.test(input);
+            }
+        }
+
+        // Initialize the AI
+        document.addEventListener('DOMContentLoaded', () => {
+            window.sentientAI = new SentientAI();
+        });
+    </script>
+</body>
+</html>
